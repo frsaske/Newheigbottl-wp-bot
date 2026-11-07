@@ -19,9 +19,9 @@ async function videoCommand(sock, chatId, message) {
 
         const video = await getYtVideo(query);
 
-        // Send video directly
+        // Send video directly as binary buffer
         await sock.sendMessage(chatId, {
-            video: { url: video.downloadUrl },
+            video: video.buffer,
             mimetype: 'video/mp4',
             fileName: video.filename || `${video.title}.mp4`,
             caption: `🎥 *${video.title}*\n⏱️ *Duration:* ${video.duration || 'N/A'}\n👤 *Channel:* ${video.author || 'YouTube'}`

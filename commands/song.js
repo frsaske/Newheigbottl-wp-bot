@@ -14,17 +14,30 @@ async function songCommand(sock, chatId, message) {
 
         // Inform user that download is in progress
         await sock.sendMessage(chatId, {
-            text: `🔎 *Searching & downloading audio:* _${query}_\n⏳ Please wait...`
+            text: `🔎 *Searching & preparing music player:* _${query}_\n⏳ Please wait...`
         }, { quoted: message });
 
         const audio = await getYtAudio(query);
 
-        // Send audio directly to chat
+        // Rich WhatsApp Music Player Card
+        const externalAdReply = {
+            title: audio.title || 'Song Player',
+            body: `${audio.author || 'Artist'} • ${audio.duration || 'Audio Track'}`,
+            mediaType: 2,
+            thumbnailUrl: audio.thumbnail || undefined,
+            sourceUrl: audio.url || 'https://youtube.com',
+            mediaUrl: audio.url || 'https://youtube.com',
+            renderLargerThumbnail: true,
+            showAdAttribution: true
+        };
+
+        // Send audio directly with player card
         await sock.sendMessage(chatId, {
             audio: audio.buffer,
             mimetype: 'audio/mpeg',
             fileName: audio.filename || `${audio.title}.mp3`,
-            ptt: false
+            ptt: false,
+            contextInfo: { externalAdReply }
         }, { quoted: message });
 
     } catch (err) {

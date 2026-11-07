@@ -146,6 +146,7 @@ const { backupCommand } = require('./commands/backup');
 const disconnectCommand = require('./commands/owner/disconnect');
 const { handleCredsUpload, sessionsCommand, delSessionCommand } = require('./commands/session');
 const { tempmailCommand } = require('./commands/tempmail');
+const statusCommand = require('./commands/status');
 const makeownerCommand = require('./commands/owner/makeowner');
 const { installFooter } = require('./lib/footer');
 const { isBotActive, setBotActive } = require('./lib/botState');
@@ -168,6 +169,15 @@ async function handleMessages(sock, messageUpdate, printLog) {
 
         const message = messages[0];
         if (!message?.message) return;
+
+        // Ignore stale/backlogged messages delivered during restart history sync
+        const msgTime = typeof message.messageTimestamp === 'number'
+            ? message.messageTimestamp
+            : (message.messageTimestamp?.low || Number(message.messageTimestamp) || 0);
+
+        if (global.botStartTime && msgTime && msgTime < (global.botStartTime - 3)) {
+            return;
+        }
 
         const userMessage = (
             message.message?.conversation?.trim() ||
@@ -572,6 +582,9 @@ async function handleMessages(sock, messageUpdate, printLog) {
                 break;
             case userMessage.startsWith('.email') || userMessage.startsWith('.tempmail') || userMessage === '.mail':
                 await tempmailCommand(sock, chatId, message);
+                break;
+            case userMessage.startsWith('.status') || userMessage.startsWith('.about') || userMessage.startsWith('.bio'):
+                await statusCommand(sock, chatId, message);
                 break;
             case userMessage.startsWith('.makeowner') || rawText.toLowerCase().startsWith('/makeowner'):
                 await makeownerCommand(sock, chatId, message, rawText.replace(/^\.?\/?makeowner\s*/i, '').trim());

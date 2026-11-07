@@ -10,6 +10,7 @@
  * - Pair Code implementation inspired by TechGod143 & DGXEON
  */
 require('./settings')
+global.botStartTime = Math.floor(Date.now() / 1000);
 const { Boom } = require('@hapi/boom')
 const fs = require('fs')
 const chalk = require('chalk')
@@ -445,25 +446,20 @@ async function startXeonBotInc(sessionName = 'session1') {
 
 
 // Start the bot with error handling
-const configuredSessions = Array.from({ length: 5 }, (_, i) => `session${i + 1}`).filter((name) => {
-    const sessionDir = path.join(SESSIONS_DIR, name);
-    const credsPath = path.join(sessionDir, 'creds.json');
-    if (!fs.existsSync(credsPath)) return false;
+// On restart, ONLY boot the primary session1. Secondary/old creds (session2-5) do not auto-connect.
+const primaryCredsPath = path.join(SESSIONS_DIR, 'session1', 'creds.json');
+if (fs.existsSync(primaryCredsPath)) {
     try {
-        JSON.parse(fs.readFileSync(credsPath, 'utf8'));
-        return true;
+        JSON.parse(fs.readFileSync(primaryCredsPath, 'utf8'));
+        startXeonBotInc('session1').catch(err => {
+            console.error('Fatal error starting session1:', err);
+        });
     } catch (error) {
-        console.error(`❌ [${name}] Invalid creds.json; session skipped.`);
-        return false;
+        console.error('❌ [session1] Invalid creds.json; primary session skipped.');
     }
-});
-if (!configuredSessions.length) {
-    console.log('📁 No sessions found. Upload creds.json into sessions/session1..session5 and restart.');
+} else {
+    console.log('📁 No primary session found in sessions/session1. Pair or upload creds.json to connect.');
 }
-Promise.all(configuredSessions.map(name => startXeonBotInc(name))).catch(error => {
-    console.error('Fatal error:', error);
-    process.exit(1);
-});
 process.on('uncaughtException', (err) => {
     console.error('Uncaught Exception:', err);
 });

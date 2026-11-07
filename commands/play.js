@@ -13,27 +13,30 @@ async function playCommand(sock, chatId, message) {
 
         // Send progress message
         await sock.sendMessage(chatId, {
-            text: `🎵 *Searching & fetching:* _${query}_\n⏳ Please wait a moment...`
+            text: `🎵 *Searching & loading music player:* _${query}_\n⏳ Please wait a moment...`
         }, { quoted: message });
 
         const audio = await getYtAudio(query);
 
-        // Send cover image preview if available
-        if (audio.thumbnail) {
-            try {
-                await sock.sendMessage(chatId, {
-                    image: { url: audio.thumbnail },
-                    caption: `🎶 *Title:* ${audio.title}\n⏱️ *Duration:* ${audio.duration || 'N/A'}\n👤 *Artist:* ${audio.author || 'YouTube'}`
-                }, { quoted: message });
-            } catch (_) {}
-        }
+        // Rich WhatsApp Music Player Card
+        const externalAdReply = {
+            title: audio.title || 'Now Playing',
+            body: `${audio.author || 'Artist'} • ${audio.duration || 'HQ Audio'}`,
+            mediaType: 2, // Audio/Music player format
+            thumbnailUrl: audio.thumbnail || undefined,
+            sourceUrl: audio.url || 'https://youtube.com',
+            mediaUrl: audio.url || 'https://youtube.com',
+            renderLargerThumbnail: true,
+            showAdAttribution: true
+        };
 
-        // Send audio
+        // Send audio with integrated player card
         await sock.sendMessage(chatId, {
             audio: audio.buffer,
             mimetype: 'audio/mpeg',
             fileName: audio.filename || `${audio.title}.mp3`,
-            ptt: false
+            ptt: false,
+            contextInfo: { externalAdReply }
         }, { quoted: message });
 
     } catch (error) {

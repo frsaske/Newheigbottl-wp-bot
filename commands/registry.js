@@ -105,6 +105,7 @@ const sections = {
   Misc: {
     icon: '✧',
     commands: [
+      '.status <num>',
       '.email (10m tempmail)',
       '.simp @user',
       '.topmembers',
